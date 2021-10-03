@@ -84,7 +84,6 @@ def main() -> None:
 
 	URL = creds['url']
 	USERNAME = creds['username']
-	# PASSWORD = "2Ch1mps4"
 
 	vec = VeeamEasyConnect()
 

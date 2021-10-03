@@ -1,7 +1,12 @@
 # VBO Job Configuration Backup
+
+## Install 
+
+    pip install -r requirements.txt
+
 ## Overview
 
-This repository is currently a proof-of-concept for the backup of the job configuration of a Veeam Office M365. Note that I will be cleaning up the code in the near future but it does work.
+This repository is currently a proof-of-concept for the backup of the job configuration of a Veeam Office M365 instance.
 
 The vbo_backup.py will save a job_data.json file which holds all the job configurations.
 
@@ -37,9 +42,9 @@ To get the job configuration data we then need to run the following against each
 
 This does not include the "selectedItems" that is required to restore jobs.
 
-For that we need to get the URL from the "_links" key in the return object, then send another get request to it. That then needs to be added back to the original object. 
+For that we need to get the URL from the "selectedItems" under "_links" key in the return object, then send another get request to it. That then needs to be added back to the original object. 
 
-I noted that in testing that the key "title" was missing from the selectedItems nested object when it was a SharePoint site. In order to get around this I created a decorator that takes the result of the main run_get_jobs() function, and runs the check, adds the key if required, and makes it equal to the 'name' value if it isn't. 
+I noted that in testing that the key "title" was missing from the selectedItems nested object when it was a SharePoint site. In order to get around this I created a decorator that takes the result of the main run_get_jobs() function, and runs the check, adds the key if required and setting it to the 'name' value, which I found works.
 
 Finally the data is saved to the job_data.json file.
 
@@ -68,10 +73,15 @@ The process that is taken is as follows:
 1. Get the configured proxies
 2. Get the configured repositories and add them to the proxy object
 3. Provides a choice of restoring a job or all the jobs
-4. For each job it will ask what proxy and repository needs to be used
+4. For each job it will ask which proxy and repository needs to be used
 5. Restores the job(s)
 
 Step 3 loops through each of the jobs that are read from the jobs_data.json file. It then uses the select_proxy_repo function which provides the wizard and returns the proxy and repo ids that are then added to the object that needs to be sent to the API.
 
 The all job restore version saves an updated file to "job_data_updated.json". The single restore version save it to "one_job_data.json"
 
+## Easy Connect
+
+This project uses a modified version of Veeam Easy Connect https://github.com/shapedthought/veeam-easy-connect which allows connection to VBO.
+
+I will be updating that module with the VBO connection option soon.
