@@ -132,7 +132,7 @@ def main():
     # create list of the names
     proxy_names = [x['description'] for x in repo_proxy_map]
 
-    with open("job_data_old.json", "r") as job_file:
+    with open("job_data.json", "r") as job_file:
         job_data = json.load(job_file)
 
 
