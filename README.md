@@ -46,6 +46,8 @@ For that we need to get the URL from the "selectedItems" under "_links" key in t
 
 I noted that in testing that the key "title" was missing from the selectedItems nested object when it was a SharePoint site. In order to get around this I created a decorator that takes the result of the main run_get_jobs() function, and runs the check, adds the key if required and setting it to the 'name' value, which I found works.
 
+EDIT - After running the SharePoint job again I have found that it the above doesn't work; I'm looking in to it.
+
 Finally the data is saved to the job_data.json file.
 
 ### Restore
