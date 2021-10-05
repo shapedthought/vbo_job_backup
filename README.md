@@ -44,9 +44,9 @@ This does not include the "selectedItems" that is required to restore jobs.
 
 For that we need to get the URL from the "selectedItems" under "_links" key in the return object, then send another get request to it. That then needs to be added back to the original object. 
 
-I noted that in testing that the key "title" was missing from the selectedItems nested object when it was a SharePoint site. In order to get around this I created a decorator that takes the result of the main run_get_jobs() function, and runs the check, adds the key if required and setting it to the 'name' value, which I found works.
+    f"https://{url}:4443/v5/Organizations/6d5a58d2-aea3-4eb9-b8cc-c707bbf75d57/Sites/{siteId}"
 
-EDIT - After running the SharePoint job again I have found that it the above doesn't work; I'm looking in to it.
+If a SharePoint site backup has been configured, the code will call the above end-point for each SharePoint site. The tool then update some of the settings in the job object that are required for restore. This is needed as some of the settings that come back from the selectedItems aren't correct.
 
 Finally the data is saved to the job_data.json file.
 

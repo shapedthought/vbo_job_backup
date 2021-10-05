@@ -85,7 +85,7 @@ def select_proxy_repo(proxy_names: list[str], repo_proxy_map: list[dict]) -> Tup
     return proxy_id, repo_id
 
 
-def create_job(URL, str, id: str, headers: dict, data: dict) -> None:
+def create_job(URL: str, id: str, headers: dict, data: dict) -> None:
     """
     Job creation function
     """
@@ -177,10 +177,10 @@ def main():
                         proxy_id, repo_id = select_proxy_repo(proxy_names, repo_proxy_map)
                         j['proxyId'] = proxy_id
                         j['repositoryId'] = repo_id
-                        del j['lastRun']
-                        del j['nextRun']
-                        del j['_links']
-                        del j['id']
+                        # del j['lastRun']
+                        # del j['nextRun']
+                        # del j['_links']
+                        # del j['id']
                         save_json("one_job_data.json", j)
                         res = Prompt.ask("Restore the job?", choices=["Y", "N"])
                         if res == "Y":
@@ -196,7 +196,7 @@ def main():
             if len(i['jobData']) > 0:
                 for j in i['jobData']:
                     print(f"Job Name: {j['name']}, Description: {j['description']}")
-                    proxy_id, repo_id = select_proxy_repo()
+                    proxy_id, repo_id = select_proxy_repo(proxy_names, repo_proxy_map)
                     j['proxyId'] = proxy_id
                     j['repositoryId'] = repo_id
         save_json("job_data_updated.json", i)
@@ -205,10 +205,10 @@ def main():
             for i in job_data:
                 for j in i['jobData']:
                     if len(i['jobData']) > 0:
-                        del j['lastRun']
-                        del j['nextRun']
-                        del j['_links']
-                        del j['id']
+                        # del j['lastRun']
+                        # del j['nextRun']
+                        # del j['_links']
+                        # del j['id']
                         create_job(i['id'], headers, j)
         else:
             print("Jobs have not been created, exiting")
