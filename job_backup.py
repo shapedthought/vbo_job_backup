@@ -59,7 +59,7 @@ def run_get_jobs(org_data: list[dict], url: str, headers: dict) -> list[dict]:
 					if len(i['selectedItems']) > 0:
 						for e in i['selectedItems']:
 							if e['type'] == "Site":
-								sp_job_url = f"https://{url}:4443/v5/Organizations/6d5a58d2-aea3-4eb9-b8cc-c707bbf75d57/Sites/{e['site']['id']}"
+								sp_job_url = f"https://{url}:4443/v5/Organizations/{i['id']}/Sites/{e['site']['id']}"
 								sp_job_data = get_data(sp_job_url, headers)
 								e['site']['isCloud'] = sp_job_data['isCloud']
 								e['site']['isPersonal'] = sp_job_data['isPersonal']
