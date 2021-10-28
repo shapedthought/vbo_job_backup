@@ -12,7 +12,6 @@ from rich.table import Table
 from rich.console import Console
 import base64
 
-# logging.basicConfig(filename='job_creation.log', encoding='utf-8', level=logging.DEBUG)
 logging.basicConfig(filename='app.log', format='%(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 
 console = Console()
@@ -161,8 +160,6 @@ def main():
 
         for index, i in enumerate(job_data_flat):
             table.add_row(str(index), i['org'], i['jobName'], i['description'])
-            # print(f"{index} - Org: {i['org']} - Job Name: {i['jobName']} - Description: {i['description']}")
-        # console = Console()
         console.print(table)
         choices = list(range(0, len(job_data_flat)))
         c_int = list(map(str, choices))
@@ -177,10 +174,6 @@ def main():
                         proxy_id, repo_id = select_proxy_repo(proxy_names, repo_proxy_map)
                         j['proxyId'] = proxy_id
                         j['repositoryId'] = repo_id
-                        # del j['lastRun']
-                        # del j['nextRun']
-                        # del j['_links']
-                        # del j['id']
                         save_json("one_job_data.json", j)
                         res = Prompt.ask("Restore the job?", choices=["Y", "N"])
                         if res == "Y":
@@ -205,10 +198,6 @@ def main():
             for i in job_data:
                 for j in i['jobData']:
                     if len(i['jobData']) > 0:
-                        # del j['lastRun']
-                        # del j['nextRun']
-                        # del j['_links']
-                        # del j['id']
                         create_job(i['id'], headers, j)
         else:
             print("Jobs have not been created, exiting")
