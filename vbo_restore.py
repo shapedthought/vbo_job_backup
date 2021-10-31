@@ -90,7 +90,7 @@ def create_job(URL: str, id: str, headers: dict, data: dict) -> None:
     """
     try:
         post_url = f"https://{URL}:4443/v5/Organizations/{id}/Jobs"
-        pprint.pprint(data)
+        # pprint.pprint(data)
         job_res = post_data(post_url, headers, json.dumps(data))
         print("Success!")
     except Exception as e:
@@ -111,6 +111,13 @@ def main():
     vec = VeeamEasyConnect()
 
     headers = vec.vbo_login_base(URL, USERNAME, PASSWORD)
+
+    # need to get the current organizations from the VBR instance
+
+    org_url = f"https://{URL}:4443/v5/organizations"
+
+    # current org data
+    org_data = get_data(org_url, headers)
 
     repo_proxy_map = []
     proxy_names = []
@@ -134,6 +141,20 @@ def main():
     with open("job_data.json", "r") as job_file:
         job_data = json.load(job_file)
 
+    # need to add a check for the org names between the current instance
+    # and the backup file
+    jobs_data_updated = []
+
+    for i in org_data:
+        for j in job_data:
+            # If the names match update
+            if i['name'] == j['jobName']:
+                j['id'] = i['id']
+                # Append the jobs to a new list if the match
+                jobs_data_updated.append(j)
+
+    if len(jobs_data_updated) == 0:
+        sys.exit("None of the current Orgs match the Orgs in the backup file")
 
     print("This wizard can restore one or all of your VBO jobs.")
 
@@ -143,7 +164,8 @@ def main():
 
         job_data_filt = []
         job_data_flat = []
-        for i in job_data:
+        # Updated with the new list of jobs
+        for i in jobs_data_updated:
             if len(i['jobData']) > 0:
                 job_data_filt.append(i)
                 for j in i['jobData']:
@@ -185,7 +207,7 @@ def main():
 
     if res == "N":
         print("This wizard will take you through each of the jobs where you can select the current proxies and repos")
-        for index, i in  enumerate(job_data):
+        for index, i in  enumerate(jobs_data_updated):
             if len(i['jobData']) > 0:
                 for j in i['jobData']:
                     print(f"Job Name: {j['name']}, Description: {j['description']}")
@@ -195,10 +217,10 @@ def main():
         save_json("job_data_updated.json", i)
         res_job = Prompt.ask("Are you happy to proceed with restoring all jobs?")
         if res_job == "Y":
-            for i in job_data:
+            for i in jobs_data_updated:
                 for j in i['jobData']:
                     if len(i['jobData']) > 0:
-                        create_job(i['id'], headers, j)
+                        create_job(URL, i['id'], headers, j)
         else:
             print("Jobs have not been created, exiting")
             sys.exit()
