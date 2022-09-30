@@ -1,6 +1,12 @@
-# VBO Job Configuration Backup
+# V365 Job Configuration Backup
 
-## Install 
+## Updates
+
+This has been updated to VB365 v6, and now uses the Veeam Easy Connect module.
+
+VB365 v6 had some API improvements which has simplified the process and script, so should run faster.
+
+## Install
 
     pip install -r requirements.txt
 
@@ -26,11 +32,12 @@ You will need to create a creds.json file for both backup and restore in the sam
 Note that the password needs to be base64 encoded.
 
 ## How it works
+
 ### Backup
 
 Note that all the API calls can be found here:
 
-https://helpcenter.veeam.com/docs/vbo365/rest/overview.html?ver=50
+https://helpcenter.veeam.com/docs/vbo365/rest/overview.html?ver=60
 
 First we get the organizations from:
 
@@ -42,31 +49,29 @@ To get the job configuration data we then need to run the following against each
 
 This does not include the "selectedItems" that is required to restore jobs.
 
-For that we need to get the URL from the "selectedItems" under "_links" key in the return object, then send another get request to it. That then needs to be added back to the original object. 
+For that we need to get the URL from the "selectedItems" under "\_links" key in the return object, then send another get request to it. That then needs to be added back to the original object.
 
     f"https://{url}:4443/v5/Organizations/6d5a58d2-aea3-4eb9-b8cc-c707bbf75d57/Sites/{siteId}"
-
-If a SharePoint site backup has been configured, the code will call the above end-point for each SharePoint site. The tool then update some of the settings in the job object that are required for restore. This is needed as some of the settings that come back from the selectedItems aren't correct.
 
 Finally the data is saved to the job_data.json file.
 
 ### Restore
 
-Below is a comparison of the data that is included in getting the jobs from the API vs what is required to create new jobs. 
+Below is a comparison of the data that is included in getting the jobs from the API vs what is required to create new jobs.
 
-| Item           | Get | Create | 
-|----------------|-----| ------ |
-| id             |  Y  |   N    |
-| name           |  Y  |   Y    |
-| description    |  Y  |   Y    |
-| backupType     |  Y  |   Y    |
-| schedulePolicy |  Y  |   Y    |
-| proxyId        |  N  |   Y    |
-| repositoryId   |  N  |   Y    |
+| Item           | Get | Create |
+| -------------- | --- | ------ |
+| id             | Y   | N      |
+| name           | Y   | Y      |
+| description    | Y   | Y      |
+| backupType     | Y   | Y      |
+| schedulePolicy | Y   | Y      |
+| proxyId        | N   | Y      |
+| repositoryId   | N   | Y      |
 
 You will notice that the proxyId and repositoryId keys are missing from the GET request.
 
-I originally added these back to the object; however, I realized that if you are restoring after rebuilding VBO these IDs would be different. Therefore I decided to add a wizard that allows you to specify the Proxy and Repository for each job. 
+I originally added these back to the object; however, I realized that if you are restoring after rebuilding VB365 these IDs would be different. Therefore I decided to add a wizard that allows you to specify the Proxy and Repository in the current VB365 instance.
 
 The current version does not account for a change to the OrganizationId so I will likely need to add an additional step in the wizard.
 
@@ -82,8 +87,12 @@ Step 3 loops through each of the jobs that are read from the jobs_data.json file
 
 The all job restore version saves an updated file to "job_data_updated.json". The single restore version save it to "one_job_data.json"
 
+## Notes on restore points
+
+After performing a new backup after restore you will find that only the backups from that new job will be shown at the job level.
+
+To see all the backup points you will need to restore at the Organizational level.
+
 ## Easy Connect
 
-This project uses a modified version of Veeam Easy Connect https://github.com/shapedthought/veeam-easy-connect which allows connection to VBO.
-
-I will be updating that module with the VBO connection option soon.
+This project uses the Veeam Easy Connect https://github.com/shapedthought/veeam-easy-connect module.
