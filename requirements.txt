@@ -1,3 +1,4 @@
 requests=2.25.0
 rich==10.9.0
 halo==0.0.31
+veeam_easy_connect=0.8.0

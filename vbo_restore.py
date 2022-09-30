@@ -12,11 +12,14 @@ from rich.table import Table
 from rich.console import Console
 import base64
 
-logging.basicConfig(filename='app.log', format='%(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+logging.basicConfig(filename='app.log',
+                    format='%(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 
 console = Console()
 
 # Get method
+
+
 def get_data(url: str, headers: dict) -> dict:
     """
     Performs a GET request to the API
@@ -33,7 +36,8 @@ def post_data(url: str, headers: dict, data: dict) -> dict:
     Performs a POST request to the API
     """
 
-    res = requests.post(url, headers=headers, data=data, verify=False)
+    res = requests.post(url, headers=headers,
+                        json=data, verify=False)
     res.raise_for_status()
     res_data = res.json()
     return res_data
@@ -84,14 +88,18 @@ def select_proxy_repo(proxy_names: list[str], repo_proxy_map: list[dict]) -> Tup
     return proxy_id, repo_id
 
 
-def create_job(URL: str, id: str, headers: dict, data: dict) -> None:
+def create_job(vec: VeeamEasyConnect, id: str, data: dict) -> None:
     """
     Job creation function
     """
     try:
-        post_url = f"https://{URL}:4443/v5/Organizations/{id}/Jobs"
-        # pprint.pprint(data)
-        job_res = post_data(post_url, headers, json.dumps(data))
+        URL = vec.address
+        print(URL)
+        post_url = f"https://{URL}:4443/v6/Organizations/{id}/Jobs"
+
+        headers = vec.get_request_header()
+        job_res = post_data(post_url, headers, data)
+        print(f"Job {job_res['name']} created")
         print("Success!")
     except Exception as e:
         print(e)
@@ -108,37 +116,35 @@ def main():
     URL = creds['url']
     USERNAME = creds['username']
 
-    vec = VeeamEasyConnect()
+    vec = VeeamEasyConnect(USERNAME, PASSWORD, False)
 
-    headers = vec.vbo_login_base(URL, USERNAME, PASSWORD)
+    vec.o365().login(URL)
+
+    headers = vec.get_header_data()
 
     # need to get the current organizations from the VBR instance
 
-    org_url = f"https://{URL}:4443/v5/organizations"
-
     # current org data
-    org_data = get_data(org_url, headers)
+    org_data = vec.get("organizations", False)
 
     repo_proxy_map = []
     proxy_names = []
 
     # get the proxy data
-    proxy_url = f"https://{URL}:4443/v5/Proxies?extendedView=true"
-    proxy_data = get_data(proxy_url, headers)
-
+    proxy_data = vec.get("Proxies?extendedView=true", False)
 
     # get and map the repos to the proxies
     for i in proxy_data:
         repo_urls = i['_links']['repositories']['href']
-        repo_res = get_data(repo_urls, headers)
+        repo_urls = repo_urls[3:]
+        repo_res = vec.get(repo_urls, False)
         i['repoInfo'] = repo_res
         repo_proxy_map.append(i)
-
 
     # create list of the names
     proxy_names = [x['description'] for x in repo_proxy_map]
 
-    with open("job_data_basic.json", "r") as job_file:
+    with open("job_data.json", "r") as job_file:
         job_data = json.load(job_file)
 
     # need to add a check for the org names between the current instance
@@ -187,43 +193,47 @@ def main():
         c_int = list(map(str, choices))
         job_index = Prompt.ask("Select a job index to restore", choices=c_int)
 
-
         selected_job = job_data_flat[int(job_index)]
         for i in job_data_filt:
             if i['jobName'] == selected_job['org']:
                 for j in i['jobData']:
                     if j['name'] == selected_job['jobName']:
-                        proxy_id, repo_id = select_proxy_repo(proxy_names, repo_proxy_map)
+                        proxy_id, repo_id = select_proxy_repo(
+                            proxy_names, repo_proxy_map)
                         j['proxyId'] = proxy_id
                         j['repositoryId'] = repo_id
                         save_json("one_job_data.json", j)
-                        res = Prompt.ask("Restore the job?", choices=["Y", "N"])
+                        res = Prompt.ask("Restore the job?",
+                                         choices=["Y", "N"])
                         if res == "Y":
-                            create_job(URL, i['id'], headers, j)
+                            create_job(vec, i['id'], j)
                         else:
                             print("Job has not been created, exiting")
                             sys.exit()
-                            
 
     if res == "N":
         print("This wizard will take you through each of the jobs where you can select the current proxies and repos")
-        for index, i in  enumerate(jobs_data_updated):
+        for index, i in enumerate(jobs_data_updated):
             if len(i['jobData']) > 0:
                 for j in i['jobData']:
-                    print(f"Job Name: {j['name']}, Description: {j['description']}")
-                    proxy_id, repo_id = select_proxy_repo(proxy_names, repo_proxy_map)
+                    print(
+                        f"Job Name: {j['name']}, Description: {j['description']}")
+                    proxy_id, repo_id = select_proxy_repo(
+                        proxy_names, repo_proxy_map)
                     j['proxyId'] = proxy_id
                     j['repositoryId'] = repo_id
         save_json("job_data_updated.json", i)
-        res_job = Prompt.ask("Are you happy to proceed with restoring all jobs?")
+        res_job = Prompt.ask(
+            "Are you happy to proceed with restoring all jobs?")
         if res_job == "Y":
             for i in jobs_data_updated:
                 for j in i['jobData']:
                     if len(i['jobData']) > 0:
-                        create_job(URL, i['id'], headers, j)
+                        create_job(vec, i['id'], j)
         else:
             print("Jobs have not been created, exiting")
             sys.exit()
+
 
 if __name__ == "__main__":
     main()
