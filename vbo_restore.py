@@ -1,16 +1,17 @@
 #  vbo_restore.py
 
+from audioop import add
 from veeam_easy_connect import VeeamEasyConnect
 import requests
 import json
 from rich.prompt import Prompt
-import pprint
 import logging
 from typing import Tuple
 import sys
 from rich.table import Table
 from rich.console import Console
 import base64
+import os
 
 logging.basicConfig(filename='app.log',
                     format='%(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
@@ -106,7 +107,35 @@ def create_job(vec: VeeamEasyConnect, id: str, data: dict) -> None:
         logging.error("Exception occurred", exc_info=True)
 
 
+def create_creds() -> None:
+    address = Prompt.ask("Enter server address")
+    username = Prompt.ask("Enter username")
+    password = Prompt.ask("Enter password", password=True)
+
+    enc_bytes = base64.b64encode(password.encode("utf-8"))
+    enc_str = str(enc_bytes, "utf-8")
+
+    data = {
+        "url": address,
+        "username": username,
+        "password": enc_str
+    }
+
+    save_json("creds.json", data)
+    print("creds.json created")
+
+
 def main():
+
+    if not os.path.exists("creds.json"):
+        print("creds.json file not found")
+        confirm = Prompt.ask("Create file now?", choices=["Y", "N"])
+        if confirm == "Y":
+            create_creds()
+        else:
+            print("Exiting...")
+            sys.exit()
+
     with open("creds.json", "r") as creds_file:
         creds = json.load(creds_file)
 
@@ -120,7 +149,7 @@ def main():
 
     vec.o365().login(URL)
 
-    headers = vec.get_header_data()
+    vec.get_header_data()
 
     # need to get the current organizations from the VBR instance
 
@@ -144,7 +173,35 @@ def main():
     # create list of the names
     proxy_names = [x['description'] for x in repo_proxy_map]
 
-    with open("job_data.json", "r") as job_file:
+    files = os.listdir()
+    json_files = [x for x in files if "job_data" in x]
+
+    if len(json_files) == 0:
+        print("No 'job_data...json' files found")
+        sys.exit()
+
+    if len(json_files) > 1:
+        file_table = Table(title="JSON files")
+        file_table.add_column("Index", justify="center", style="cyan")
+        file_table.add_column("File Name")
+
+        for index, i in enumerate(json_files):
+            if ".json" in i and "creds.json" not in i:
+                file_table.add_row(str(index), i)
+
+        print("JSON files found in directory")
+        console.print(file_table)
+
+        fc = list(range(0, len(json_files)))
+        fc_str = list(map(str, fc))
+
+        file_select = Prompt.ask("Select file for restore", choices=fc_str)
+
+        selected_file = json_files[int(file_select)]
+    else:
+        selected_file = json_files[0]
+
+    with open(selected_file, "r") as job_file:
         job_data = json.load(job_file)
 
     # need to add a check for the org names between the current instance
